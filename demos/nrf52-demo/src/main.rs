@@ -2,7 +2,7 @@
 #![no_main]
 
 // We need to import this crate explicitly so we have a panic handler
-use panic_probe as _;
+use panic_rtt_target as _;
 
 mod attrs;
 mod logger;

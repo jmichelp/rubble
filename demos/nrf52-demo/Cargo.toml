@@ -21,10 +21,8 @@ cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }
 cortex-m-rtic = "1.1.4"
 cortex-m-rt = "0.7.3"
 bbqueue = "0.5.1"
-defmt = "0.3.5"
-defmt-rtt = "0.4.0"
 rtt-target = "0.4.0"
-panic-probe = { version = "0.3.1", features = ["print-defmt"] }
+panic-rtt-target = { version = "0.1.2", features = ["cortex-m"] }
 
 nrf52810-hal = { version = "0.16.0", optional = true }
 nrf52811-hal = { version = "0.16.0", optional = true }
@@ -43,7 +41,7 @@ test = false
 [features]
 # Note: To turn this default feature off you must run Cargo from inside the demo
 # directory, not from the workspace root.
-default = ["rubble/log", "log", "52840"]
+default = ["rubble/log", "log"]
 52810 = ["rubble-nrf5x/52810", "nrf52810-hal"]
 52811 = ["rubble-nrf5x/52811", "nrf52811-hal"]
 52832 = ["rubble-nrf5x/52832", "nrf52832-hal"]

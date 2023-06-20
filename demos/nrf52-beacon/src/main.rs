@@ -13,7 +13,7 @@ use nrf52833_hal as hal;
 #[cfg(feature = "52840")]
 use nrf52840_hal as hal;
 
-#[rtic::app(device = crate::hal::pac, peripherals = true, dispatchers = [TIMER1])]
+#[rtic::app(device = crate::hal::pac, peripherals = true, dispatchers=[TIMER1])]
 mod app {
     // We need to import this crate explicitly so we have a panic handler
     use panic_halt as _;
@@ -22,18 +22,16 @@ mod app {
     use rubble::link::{ad_structure::AdStructure, MIN_PDU_BUF};
     use rubble_nrf5x::radio::{BleRadio, PacketBuffer};
     use rubble_nrf5x::utils::get_device_address;
-    use dwt_systick_monotonic::*;
+    use systick_monotonic::*;
 
-    #[monotonic(binds = DwtSystick, default = true)]
-    type MyMono = DwtSystick<1000>;  // 1kHz = 1ms granularity
+    #[monotonic(binds=SysTick, default = true)]
+    type MyMono = Systick<1_000>;  // 1kHz = 1ms granularity
 
     #[shared]
     struct Shared {}
 
     #[local]
     struct Local {
-        ble_tx_buf: &'static mut PacketBuffer,
-        ble_rx_buf: &'static mut PacketBuffer,
         radio: BleRadio,
         beacon: Beacon,
     }
@@ -53,7 +51,7 @@ mod app {
         core.DCB.enable_trace();
         core.DWT.enable_cycle_counter();
 
-        let mono = DwtSystick::new(core.DCB, core.DWT, core.SYST, 64_000_000);
+        let mono = Systick::new(core.SYST, 64_000_000);
 
         // Determine device address
         let device_address = get_device_address();
@@ -77,8 +75,6 @@ mod app {
         update::spawn_after(1.secs()).unwrap();
 
         (Shared {}, Local {
-            ble_tx_buf,
-            ble_rx_buf,
             radio,
             beacon
         }, init::Monotonics(mono))
@@ -87,9 +83,9 @@ mod app {
     /// Fire the beacon.
     #[task(local = [radio, beacon])]
     fn update(ctx: update::Context) {
-        let beacon = ctx.shared.beacon;
-        let radio = ctx.shared.radio;
-        (beacon, radio).lock(|beacon, radio| {beacon.broadcast(radio)});
+        let beacon = ctx.local.beacon;
+        let radio = ctx.local.radio;
+        beacon.broadcast(radio);
 
         update::spawn_after(333.millis()).unwrap(); // about 3 times per second
     }
