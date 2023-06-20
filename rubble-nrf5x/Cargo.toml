@@ -1,23 +1,26 @@
 [package]
-authors = ["Jonas Schievink <jonasschievink@gmail.com>"]
+authors = [
+    "Jonas Schievink <jonasschievink@gmail.com>",
+    "Jean-Michel Picod <jmichel@google.com>",
+]
 description = "Rubble driver for the nRF51/nRF52-series radios"
 categories = ["embedded", "no-std"]
 keywords = ["ble", "nrf", "bluetooth", "low", "energy"]
-repository = "https://github.com/jonas-schievink/rubble/"
+repository = "https://github.com/jmichelp/rubble/"
 license = "0BSD"
 name = "rubble-nrf5x"
-version = "0.0.4"
-edition = "2018"
+version = "0.0.5"
+edition = "2021"
 
 [dependencies]
-rubble = { path = "../rubble", version = "0.0.4", default-features = false }
-nrf51-pac = { version = "0.10", optional = true, default-features = false }
-nrf52805-pac = { version = "0.10", optional = true, default-features = false }
-nrf52810-pac = { version = "0.10", optional = true, default-features = false }
-nrf52811-pac = { version = "0.10", optional = true, default-features = false }
-nrf52832-pac = { version = "0.10", optional = true, default-features = false }
-nrf52833-pac = { version = "0.10", optional = true, default-features = false }
-nrf52840-pac = { version = "0.10", optional = true, default-features = false }
+rubble = { path = "../rubble", version = "0.0.5", default-features = false }
+nrf51-pac = { version = "0.12.2", optional = true, default-features = false }
+nrf52805-pac = { version = "0.12.2", optional = true, default-features = false }
+nrf52810-pac = { version = "0.12.2", optional = true, default-features = false }
+nrf52811-pac = { version = "0.12.2", optional = true, default-features = false }
+nrf52832-pac = { version = "0.12.2", optional = true, default-features = false }
+nrf52833-pac = { version = "0.12.2", optional = true, default-features = false }
+nrf52840-pac = { version = "0.12.2", optional = true, default-features = false }
 
 [features]
 51 = ["nrf51-pac"]

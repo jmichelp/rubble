@@ -103,7 +103,7 @@ impl<C: Config> Connection<C> {
 
         let cmd = Cmd {
             next_update: NextUpdate::At(
-                rx_end + lldata.end_of_tx_window() + Duration::from_micros(500),
+                rx_end + lldata.end_of_tx_window() + Duration::micros(500),
             ),
             radio: RadioCmd::ListenData {
                 channel: this.channel,
@@ -352,7 +352,7 @@ impl<C: Config> Connection<C> {
 
     fn conn_event_timeout(&self) -> Duration {
         // Time out ~500µs after the anchor point of the next conn event.
-        self.conn_interval + Duration::from_micros(500)
+        self.conn_interval + Duration::micros(500)
     }
 
     /// Whether we want to send more data during this connection event.

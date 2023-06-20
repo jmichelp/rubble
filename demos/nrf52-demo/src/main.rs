@@ -1,9 +1,8 @@
 #![no_std]
 #![no_main]
-#![warn(rust_2018_idioms)]
 
 // We need to import this crate explicitly so we have a panic handler
-use panic_rtt_target as _;
+use panic_probe as _;
 
 mod attrs;
 mod logger;
@@ -20,56 +19,62 @@ use nrf52833_hal as hal;
 #[cfg(feature = "52840")]
 use nrf52840_hal as hal;
 
-use bbqueue::Consumer;
-use core::sync::atomic::{compiler_fence, Ordering};
-use hal::gpio::Level;
-use rtt_target::{rtt_init, UpChannel};
-use rubble::{
-    config::Config,
-    l2cap::{BleChannelMap, L2CAPState},
-    link::{
-        ad_structure::AdStructure,
-        queue::{PacketQueue, SimpleQueue},
-        LinkLayer, Responder, MIN_PDU_BUF,
-    },
-    security::NoSecurity,
-    time::{Duration, Timer},
-};
-use rubble_nrf5x::{
-    radio::{BleRadio, PacketBuffer},
-    timer::BleTimer,
-    utils::get_device_address,
-};
+#[rtic::app(device = crate::hal::pac, peripherals = true, dispatchers = [WDT])]
+mod app {
+    use core::mem::MaybeUninit;
 
-pub enum AppConfig {}
+    use rubble::{
+        config::Config,
+        l2cap::{BleChannelMap, L2CAPState},
+        link::{
+            ad_structure::AdStructure,
+            queue::{PacketQueue, SimpleQueue},
+            LinkLayer, Responder, MIN_PDU_BUF,
+        },
+        security::NoSecurity,
+        time::{Duration, Timer},
+    };
+    use rubble_nrf5x::{
+        radio::{BleRadio, PacketBuffer},
+        timer::BleTimer,
+        utils::get_device_address,
+    };
+    
+    use bbqueue::Consumer;
+    use core::sync::atomic::{compiler_fence, Ordering};
+    use crate::hal::gpio::Level;
+    use rtt_target::{rtt_init, UpChannel};
+    use crate::logger::BUFFER_SIZE;
 
-impl Config for AppConfig {
-    type Timer = BleTimer<hal::pac::TIMER0>;
-    type Transmitter = BleRadio;
-    type ChannelMapper = BleChannelMap<attrs::DemoAttrs, NoSecurity>;
-    type PacketQueue = &'static mut SimpleQueue;
-}
+    pub enum AppConfig {}
 
-#[rtic::app(device = crate::hal::pac, peripherals = true)]
-const APP: () = {
-    struct Resources {
-        #[init([0; MIN_PDU_BUF])]
-        ble_tx_buf: PacketBuffer,
-        #[init([0; MIN_PDU_BUF])]
-        ble_rx_buf: PacketBuffer,
-        #[init(SimpleQueue::new())]
-        tx_queue: SimpleQueue,
-        #[init(SimpleQueue::new())]
-        rx_queue: SimpleQueue,
-        ble_ll: LinkLayer<AppConfig>,
-        ble_r: Responder<AppConfig>,
-        radio: BleRadio,
-        log_channel: UpChannel,
-        log_sink: Consumer<'static, logger::BufferSize>,
+    impl Config for AppConfig {
+        type Timer = BleTimer<crate::hal::pac::TIMER0>;
+        type Transmitter = BleRadio;
+        type ChannelMapper = BleChannelMap<crate::attrs::DemoAttrs, NoSecurity>;
+        type PacketQueue = &'static mut SimpleQueue;
     }
 
-    #[init(resources = [ble_tx_buf, ble_rx_buf, tx_queue, rx_queue])]
-    fn init(ctx: init::Context) -> init::LateResources {
+    #[local]
+    struct Local {
+        ble_r: Responder<AppConfig>,
+        log_channel: UpChannel,
+        log_sink: Consumer<'static, BUFFER_SIZE>,
+    }
+
+    #[shared]
+    struct Shared {
+        ble_ll: LinkLayer<AppConfig>,
+        radio: BleRadio,
+    }
+
+    #[init(local = [
+        tx_queue: SimpleQueue = SimpleQueue::new(),
+        rx_queue: SimpleQueue = SimpleQueue::new(),
+        tx_buf: MaybeUninit<PacketBuffer> = MaybeUninit::uninit(),
+        rx_buf: MaybeUninit<PacketBuffer> = MaybeUninit::uninit()
+    ])]
+    fn init(ctx: init::Context) -> (Shared, Local, init::Monotonics) {
         let rtt = rtt_init! {
             up: {
                 0: {
@@ -84,27 +89,29 @@ const APP: () = {
         // On reset, the internal high frequency clock is already used, but we
         // also need to switch to the external HF oscillator. This is needed
         // for Bluetooth to work.
-        let _clocks = hal::clocks::Clocks::new(ctx.device.CLOCK).enable_ext_hfosc();
+        let _clocks = crate::hal::clocks::Clocks::new(ctx.device.CLOCK).enable_ext_hfosc();
 
         let ble_timer = BleTimer::init(ctx.device.TIMER0);
 
-        let p0 = hal::gpio::p0::Parts::new(ctx.device.P0);
+        let p0 = crate::hal::gpio::p0::Parts::new(ctx.device.P0);
 
         // Determine device address
         let device_address = get_device_address();
 
+        let ble_rx_buf: &'static mut _ = ctx.local.rx_buf.write([0; MIN_PDU_BUF]);
+        let ble_tx_buf: &'static mut _ = ctx.local.tx_buf.write([0; MIN_PDU_BUF]);
         let mut radio = BleRadio::new(
             ctx.device.RADIO,
             &ctx.device.FICR,
-            ctx.resources.ble_tx_buf,
-            ctx.resources.ble_rx_buf,
+            ble_tx_buf,
+            ble_rx_buf,
         );
 
-        let log_sink = logger::init(ble_timer.create_stamp_source());
+        let log_sink = crate::logger::init(ble_timer.create_stamp_source());
 
         // Create TX/RX queues
-        let (tx, tx_cons) = ctx.resources.tx_queue.split();
-        let (rx_prod, rx) = ctx.resources.rx_queue.split();
+        let (tx, tx_cons) = ctx.local.tx_queue.split();
+        let (rx_prod, rx) = ctx.local.rx_queue.split();
 
         // Create the actual BLE stack objects
         let mut ble_ll = LinkLayer::<AppConfig>::new(device_address, ble_timer);
@@ -114,7 +121,7 @@ const APP: () = {
         let ble_r = Responder::new(
             tx,
             rx,
-            L2CAPState::new(BleChannelMap::with_attributes(attrs::DemoAttrs::new(
+            L2CAPState::new(BleChannelMap::with_attributes(crate::attrs::DemoAttrs::new(
                 p0.p0_17.into_push_pull_output(Level::High).degrade(),
             ))),
         );
@@ -122,7 +129,7 @@ const APP: () = {
         // Send advertisement and set up regular interrupt
         let next_update = ble_ll
             .start_advertise(
-                Duration::from_millis(200),
+                Duration::millis(200),
                 &[AdStructure::CompleteLocalName("CONCVRRENS CERTA CELERIS")],
                 &mut radio,
                 tx_cons,
@@ -132,64 +139,64 @@ const APP: () = {
 
         ble_ll.timer().configure_interrupt(next_update);
 
-        init::LateResources {
+        (Shared {
             radio,
             ble_ll,
+        }, Local {
             ble_r,
             log_channel,
-            log_sink,
-        }
+            log_sink
+        }, init::Monotonics())
     }
 
-    #[task(binds = RADIO, resources = [radio, ble_ll], spawn = [ble_worker], priority = 3)]
+    #[task(binds = RADIO, shared = [radio, ble_ll], priority = 3)]
     fn radio(ctx: radio::Context) {
-        let ble_ll: &mut LinkLayer<AppConfig> = ctx.resources.ble_ll;
-        if let Some(cmd) = ctx
-            .resources
-            .radio
-            .recv_interrupt(ble_ll.timer().now(), ble_ll)
-        {
-            ctx.resources.radio.configure_receiver(cmd.radio);
-            ble_ll.timer().configure_interrupt(cmd.next_update);
+        let ble_ll = ctx.shared.ble_ll;
+        let radio = ctx.shared.radio;
+        (radio, ble_ll).lock(|radio, ble_ll| {
+            if let Some(cmd) = radio.recv_interrupt(ble_ll.timer().now(), ble_ll) {
+                radio.configure_receiver(cmd.radio);
+                ble_ll.timer().configure_interrupt(cmd.next_update);
+
+                if cmd.queued_work {
+                    // If there's any lower-priority work to be done, ensure that happens.
+                    // If we fail to spawn the task, it's already scheduled.
+                    ble_worker::spawn().unwrap();
+                }
+            }
+        });
+    }
+
+    #[task(binds = TIMER0, shared = [radio, ble_ll], priority = 3)]
+    fn timer0(ctx: timer0::Context) {
+        let radio = ctx.shared.radio;
+        let ble_ll = ctx.shared.ble_ll;
+        (radio, ble_ll).lock(|radio, ble_ll| {
+            let timer = ble_ll.timer();
+            if !timer.is_interrupt_pending() {
+                return;
+            }
+            timer.clear_interrupt();
+    
+            let cmd = ble_ll.update_timer(radio);
+            radio.configure_receiver(cmd.radio);
+            ble_ll.timer().configure_interrupt(cmd.next_update);    
 
             if cmd.queued_work {
                 // If there's any lower-priority work to be done, ensure that happens.
                 // If we fail to spawn the task, it's already scheduled.
-                ctx.spawn.ble_worker().ok();
+                ble_worker::spawn().unwrap();
             }
-        }
+            });
     }
 
-    #[task(binds = TIMER0, resources = [radio, ble_ll], spawn = [ble_worker], priority = 3)]
-    fn timer0(ctx: timer0::Context) {
-        let timer = ctx.resources.ble_ll.timer();
-        if !timer.is_interrupt_pending() {
-            return;
-        }
-        timer.clear_interrupt();
-
-        let cmd = ctx.resources.ble_ll.update_timer(ctx.resources.radio);
-        ctx.resources.radio.configure_receiver(cmd.radio);
-
-        ctx.resources
-            .ble_ll
-            .timer()
-            .configure_interrupt(cmd.next_update);
-
-        if cmd.queued_work {
-            // If there's any lower-priority work to be done, ensure that happens.
-            // If we fail to spawn the task, it's already scheduled.
-            ctx.spawn.ble_worker().ok();
-        }
-    }
-
-    #[idle(resources = [log_sink, log_channel])]
+    #[idle(local = [log_sink, log_channel])]
     fn idle(ctx: idle::Context) -> ! {
         // Drain the logging buffer through the serial connection
         loop {
             if cfg!(feature = "log") {
-                while let Ok(grant) = ctx.resources.log_sink.read() {
-                    ctx.resources.log_channel.write(grant.buf());
+                while let Ok(grant) = ctx.local.log_sink.read() {
+                    ctx.local.log_channel.write(grant.buf());
 
                     let len = grant.buf().len();
                     grant.release(len);
@@ -201,15 +208,12 @@ const APP: () = {
         }
     }
 
-    #[task(resources = [ble_r], priority = 2)]
+    #[task(local = [ble_r], priority = 2)]
     fn ble_worker(ctx: ble_worker::Context) {
         // Fully drain the packet queue
-        while ctx.resources.ble_r.has_work() {
-            ctx.resources.ble_r.process_one().unwrap();
+        while ctx.local.ble_r.has_work() {
+            ctx.local.ble_r.process_one().unwrap();
         }
     }
 
-    extern "C" {
-        fn WDT();
-    }
-};
+}

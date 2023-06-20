@@ -3,6 +3,7 @@ use bitflags::bitflags;
 
 bitflags! {
     /// A set of optional Link Layer features.
+    #[derive(Debug, Clone, Copy)]
     pub struct FeatureSet: u64 {
         /// Low-Energy data encryption.
         ///

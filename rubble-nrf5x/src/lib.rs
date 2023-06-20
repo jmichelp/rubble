@@ -1,7 +1,6 @@
 //! A Rubble BLE driver for the nRF51/nRF52-series radios.
 
 #![no_std]
-#![warn(rust_2018_idioms)]
 
 #[cfg(feature = "51")]
 use nrf51_pac as pac;

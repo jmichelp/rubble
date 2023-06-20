@@ -1,29 +1,30 @@
 [package]
-authors = ["Jonas Schievink <jonasschievink@gmail.com>"]
+authors = ["Jonas Schievink <jonasschievink@gmail.com>", "Jean-Michel Picod <jmichel@google.com>"]
 description = "Rubble BLE stack demo showcasing beacons on the nRF52 MCUs"
 categories = ["embedded", "no-std"]
 keywords = ["arm", "nrf", "bluetooth", "low", "energy"]
-repository = "https://github.com/jonas-schievink/rubble/"
+repository = "https://github.com/jmichelp/rubble/"
 license = "0BSD"
 name = "nrf52-beacon"
 version = "0.0.0"
-edition = "2018"
+edition = "2021"
 publish = false
 
 [dependencies]
 rubble = { path = "../../rubble", default-features = false }
 rubble-nrf5x = { path = "../../rubble-nrf5x" }
 demo-utils = { path = "../demo-utils" }
-cortex-m = "0.7.2"
-cortex-m-rtic = { version = "0.5.8", default-features = false, features = ["cortex-m-7"] }
+cortex-m = { version = "0.7.7", features= ["critical-section-single-core"] }
+cortex-m-rtic = "1.1.4"
 cortex-m-rt = "0.7"
+dwt-systick-monotonic = "1.1.0"
 panic-halt = "0.2.0"
 
-nrf52810-hal = { version = "0.14", features = ["rt"], optional = true }
-nrf52811-hal = { version = "0.14", features = ["rt"], optional = true }
-nrf52832-hal = { version = "0.14", features = ["rt"], optional = true }
-nrf52833-hal = { version = "0.14", features = ["rt"], optional = true }
-nrf52840-hal = { version = "0.14", features = ["rt"], optional = true }
+nrf52810-hal = { version = "0.16.0", optional = true }
+nrf52811-hal = { version = "0.16.0", optional = true }
+nrf52832-hal = { version = "0.16.0", optional = true }
+nrf52833-hal = { version = "0.16.0", optional = true }
+nrf52840-hal = { version = "0.16.0", optional = true }
 
 # Disable documentation to avoid spurious rustdoc warnings
 [[bin]]
@@ -32,6 +33,7 @@ doc = false
 test = false
 
 [features]
+default = ["52840"]
 52810 = ["rubble-nrf5x/52810", "nrf52810-hal"]
 52811 = ["rubble-nrf5x/52811", "nrf52811-hal"]
 52832 = ["rubble-nrf5x/52832", "nrf52832-hal"]

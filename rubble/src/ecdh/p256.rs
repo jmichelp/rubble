@@ -3,8 +3,9 @@ use ::p256::{
     elliptic_curve::{
         sec1::{FromEncodedPoint, ToEncodedPoint},
         Field,
+        Group,
     },
-    ProjectivePoint, Scalar,
+    ProjectivePoint, Scalar
 };
 use rand_core::{CryptoRng, RngCore};
 
@@ -53,8 +54,10 @@ pub struct P256SecretKey {
 impl P256SecretKey {
     #[cfg(test)]
     fn from_test_data(bytes: [u8; 32]) -> Self {
+        use ::p256::{elliptic_curve::ScalarPrimitive, NistP256};
+
         Self {
-            inner: Scalar::from_bytes_reduced((&bytes).into()),
+            inner: Option::<ScalarPrimitive<NistP256>>::from(ScalarPrimitive::<NistP256>::from_bytes((&bytes).into())).unwrap().into()
         }
     }
 }
@@ -71,7 +74,7 @@ impl SecretKey for P256SecretKey {
 
         // ECDH is nothing but multiplying the foreign public key by the local secret key.
         let affine = ::p256::AffinePoint::from_encoded_point(&foreign_key);
-        if affine.is_none() {
+        if affine.is_none().into() {
             return Err(InvalidPublicKey::new());
         }
 

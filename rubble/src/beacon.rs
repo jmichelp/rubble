@@ -87,7 +87,7 @@ impl<C: ScanCallback, F: AddressFilter> BeaconScanner<C, F> {
         Self {
             cb: callback,
             filter: ScanFilter::new(scan_filter),
-            interval: Duration::from_micros(0),
+            interval: Duration::micros(0),
             channel: AdvertisingChannel::first(),
         }
     }

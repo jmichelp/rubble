@@ -50,7 +50,7 @@ use rubble::link::{
     advertising, data, Cmd, LinkLayer, RadioCmd, Transmitter, CRC_POLY, MIN_PDU_BUF,
 };
 use rubble::phy::{AdvertisingChannel, DataChannel};
-use rubble::time::{Duration, Instant};
+use rubble::time::{T_IFS, Instant};
 
 /// A packet buffer that can hold header and payload of any advertising or data channel packet.
 pub type PacketBuffer = [u8; MIN_PDU_BUF];
@@ -249,7 +249,7 @@ impl BleRadio {
                 // Enforce T_IFS in hardware.
                 self.radio
                     .tifs
-                    .write(|w| unsafe { w.bits(Duration::T_IFS.as_micros()) });
+                    .write(|w| unsafe { w.bits(T_IFS.to_micros()) });
 
                 let rx_buf = (*self.rx_buf.as_mut().unwrap()) as *mut _ as u32;
                 self.radio.packetptr.write(|w| unsafe { w.bits(rx_buf) });

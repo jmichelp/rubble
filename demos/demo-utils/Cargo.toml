@@ -1,17 +1,17 @@
 [package]
-authors = ["Jonas Schievink <jonasschievink@gmail.com>"]
+authors = ["Jonas Schievink <jonasschievink@gmail.com>", "Jean-Michel Picod <jmichel@google.com>"]
 description = "Common utilities used by Rubble demos"
 categories = ["embedded", "no-std"]
 keywords = ["arm", "nrf", "bluetooth", "low", "energy"]
-repository = "https://github.com/jonas-schievink/rubble/"
+repository = "https://github.com/jmichelp/rubble/"
 license = "0BSD"
 name = "demo-utils"
 version = "0.0.0"
-edition = "2018"
+edition = "2021"
 publish = false
 
 [dependencies]
 rubble = { path = "../../rubble", default-features = false }
-cortex-m = "0.7.2"
-log = "0.4.8"
-bbqueue = "0.4.1"
+cortex-m = "0.7.7"
+log = "0.4.19"
+bbqueue = "0.5.1"

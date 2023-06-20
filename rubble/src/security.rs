@@ -351,6 +351,7 @@ enum_with_unknown! {
 
 bitflags! {
     /// Indicates which types of keys a device requests for distribution.
+    #[derive(Debug)]
     struct KeyDistribution: u8 {
         const ENC_KEY = 1 << 0;
         const ID_KEY = 1 << 1;

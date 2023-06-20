@@ -252,6 +252,7 @@ bitflags! {
     /// BR/EDR and LE compatibility flags.
     ///
     /// This is mandatory for most devices and can only be omitted if all flags are 0.
+    #[derive(Debug, Copy, Clone)]
     pub struct Flags: u8 {
         const LE_LIMITED_DISCOVERABLE = 0b00000001;
         const LE_GENERAL_DISCOVERABLE = 0b00000010;

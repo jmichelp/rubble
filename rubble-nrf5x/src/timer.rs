@@ -4,7 +4,7 @@ use crate::pac;
 use core::mem;
 use rubble::{
     link::NextUpdate,
-    time::{Instant, Timer},
+    time::{Duration, Instant, Timer},
 };
 
 /// Implements Rubble's `Timer` trait for the timers on the nRF chip.
@@ -22,7 +22,7 @@ impl<T: NrfTimerExt> BleTimer<T> {
         peripheral.init();
         Self {
             inner: peripheral,
-            next: Instant::from_raw_micros(0),
+            next: Instant::from_ticks(Duration::micros(0).ticks()),
             interrupt_enabled: false,
         }
     }
@@ -147,9 +147,9 @@ macro_rules! impl_timer {
                 fn set_interrupt(&mut self, at: Instant) {
                     // Not sure if an assertion is the right thing here, we might want to trigger the
                     // interrupt immediately instead.
-                    at.duration_since(self.now());
+                    at.checked_duration_since(self.now());
 
-                    self.cc[1].write(|w| unsafe { w.bits(at.raw_micros()) });
+                    self.cc[1].write(|w| unsafe { w.bits(Duration::from_ticks(at.ticks()).to_micros()) });
                     self.events_compare[1].reset();
                     self.intenset.write(|w| w.compare1().set());
                 }
@@ -166,7 +166,7 @@ macro_rules! impl_timer {
                 fn now(&self) -> Instant {
                     self.tasks_capture[0].write(|w| unsafe { w.bits(1) });
                     let micros = self.cc[0].read().bits();
-                    Instant::from_raw_micros(micros)
+                    Instant::from_ticks(Duration::micros(micros).ticks())
                 }
             }
 

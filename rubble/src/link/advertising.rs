@@ -380,7 +380,7 @@ impl ConnectRequestData {
     /// `self`.
     pub fn end_of_tx_window(&self) -> Duration {
         // We only handle `CONNECT_IND`, so transmitWindowDelay is 1.25 ms
-        let transmit_window_delay = Duration::from_micros(1250);
+        let transmit_window_delay = Duration::micros(1250);
 
         self.win_offset + self.win_size + transmit_window_delay
     }
@@ -415,15 +415,15 @@ impl FromBytes<'_> for ConnectRequestData {
                 Hex(u32::from_le_bytes(le_bytes))
             },
             // transmitWindowSize in 1.25 ms steps
-            win_size: Duration::from_micros(u32::from(bytes.read_u8()?) * 1250),
+            win_size: Duration::micros(u32::from(bytes.read_u8()?) * 1250),
             // transmitWindowOffset in 1.25 ms steps
-            win_offset: Duration::from_micros(u32::from(bytes.read_u16_le()?) * 1250),
+            win_offset: Duration::micros(u32::from(bytes.read_u16_le()?) * 1250),
             // connInterval in 1.25 ms steps
-            interval: Duration::from_micros(u32::from(bytes.read_u16_le()?) * 1250),
+            interval: Duration::micros(u32::from(bytes.read_u16_le()?) * 1250),
             // connSlaveLatency in no. of events
             latency: bytes.read_u16_le()?,
             // supervision timeout in 10 ms steps
-            timeout: Duration::from_micros(u32::from(bytes.read_u16_le()?) * 10_000),
+            timeout: Duration::micros(u32::from(bytes.read_u16_le()?) * 10_000),
             chm: ChannelMap::from_raw(bytes.read_array()?),
             hop: {
                 let hop_and_sca = bytes.read_u8()?;

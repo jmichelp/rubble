@@ -1,36 +1,38 @@
 [package]
-authors = ["Jonas Schievink <jonasschievink@gmail.com>"]
+authors = [
+    "Jonas Schievink <jonasschievink@gmail.com>",
+    "Jean-Michel Picod <jmichel@google.com>"
+]
 description = "Rubble BLE stack demo for the nRF52 MCU family"
 categories = ["embedded", "no-std"]
 keywords = ["arm", "nrf", "bluetooth", "low", "energy"]
-repository = "https://github.com/jonas-schievink/rubble/"
+repository = "https://github.com/jmichelp/rubble/"
 license = "0BSD"
 name = "nrf52-demo"
 version = "0.0.0"
-edition = "2018"
+edition = "2021"
 publish = false
 
 [dependencies]
 rubble = { path = "../../rubble", default-features = false }
 rubble-nrf5x = { path = "../../rubble-nrf5x" }
 demo-utils = { path = "../demo-utils" }
-cortex-m = "0.7.2"
-cortex-m-rtic = { version = "0.5.8", default-features = false, features = ["cortex-m-7"] }
-cortex-m-rt = "0.7.0"
-bbqueue = "0.4"
-rtt-target = { version = "0.3.0", features = ["cortex-m"] }
-panic-rtt-target = { version = "0.1.1", features = ["cortex-m"] }
+cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }
+cortex-m-rtic = "1.1.4"
+cortex-m-rt = "0.7.3"
+bbqueue = "0.5.1"
+defmt = "0.3.5"
+defmt-rtt = "0.4.0"
+rtt-target = "0.4.0"
+panic-probe = { version = "0.3.1", features = ["print-defmt"] }
 
-nrf52810-hal = { version = "0.14", features = ["rt"], optional = true }
-nrf52811-hal = { version = "0.14", features = ["rt"], optional = true }
-nrf52832-hal = { version = "0.14", features = ["rt"], optional = true }
-nrf52833-hal = { version = "0.14", features = ["rt"], optional = true }
-nrf52840-hal = { version = "0.14", features = ["rt"], optional = true }
+nrf52810-hal = { version = "0.16.0", optional = true }
+nrf52811-hal = { version = "0.16.0", optional = true }
+nrf52832-hal = { version = "0.16.0", optional = true }
+nrf52833-hal = { version = "0.16.0", optional = true }
+nrf52840-hal = { version = "0.16.0", optional = true }
 
-[dependencies.log]
-version = "0.4.8"
-features = ["release_max_level_warn"]
-optional = true
+log = { version = "0.4.19", features = ["release_max_level_warn"], optional = true }
 
 # Disable documentation to avoid spurious rustdoc warnings
 [[bin]]
@@ -41,7 +43,7 @@ test = false
 [features]
 # Note: To turn this default feature off you must run Cargo from inside the demo
 # directory, not from the workspace root.
-default = ["rubble/log", "log"]
+default = ["rubble/log", "log", "52840"]
 52810 = ["rubble-nrf5x/52810", "nrf52810-hal"]
 52811 = ["rubble-nrf5x/52811", "nrf52811-hal"]
 52832 = ["rubble-nrf5x/52832", "nrf52832-hal"]

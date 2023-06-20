@@ -1,44 +1,30 @@
 [package]
-authors = ["Jonas Schievink <jonasschievink@gmail.com>"]
+authors = [
+    "Jonas Schievink <jonasschievink@gmail.com>", 
+    "Jean-Michel Picod <jmiche@google.com>"
+]
 description = "An embedded BLE stack"
 categories = ["embedded", "no-std"]
 keywords = ["arm", "ble", "bluetooth", "low", "energy"]
-repository = "https://github.com/jonas-schievink/rubble/"
+repository = "https://github.com/jmichelp/rubble/"
 readme = "../README.md"
 license = "0BSD"
 name = "rubble"
-version = "0.0.4"
-edition = "2018"
+version = "0.0.5"
+edition = "2021"
 
 [dependencies]
-bitflags = "1.2.1"
-heapless = "0.7.1"
-rand_core = "0.6.3"
-sha2 = { version = "0.9.0", default-features = false }
-zerocopy = "0.5.0"
-defmt = "0.2.3"
-
-[dependencies.p256]
-version = "0.9.0"
-default-features = false
-features = ["arithmetic"]
-
-# The `ring` feature can be enabled to provide P-256 operations for non-embedded use cases.
-[dependencies.ring]
-version = "0.16.9"
-default-features = false
-optional = true
-
-# If the `log` feature is enabled, the `log` crate's macros will be called at various points to dump
-# packets, state, and events. By default, it is disabled.
-[dependencies.log]
-version = "0.4.8"
-optional = true
+bitflags = "2.3.2"
+fugit = "0.3.7"
+heapless = "0.7.16"
+rand_core = "0.6.4"
+sha2 = { version = "0.10.7", default-features = false }
+zerocopy = "0.6.1"
+defmt = "0.3.5"
+p256 = { version="0.13.2", default-features = false, features = ["arithmetic"]}
+ring = { version = "0.16.20", default-features = false, optional = true }
+log = { version = "0.4.19", optional = true }
 
 [dev-dependencies]
-ring = "0.16.9"
-
-[dev-dependencies.p256]
-version = "0.9.0"
-default-features = false
-features = ["arithmetic"]
+p256 = { version = "0.13.2", default-features = false, features = ["arithmetic"]}
+ring = "0.16.20"
