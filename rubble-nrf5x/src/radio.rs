@@ -50,7 +50,7 @@ use rubble::link::{
     advertising, data, Cmd, LinkLayer, RadioCmd, Transmitter, CRC_POLY, MIN_PDU_BUF,
 };
 use rubble::phy::{AdvertisingChannel, DataChannel};
-use rubble::time::{T_IFS, Instant};
+use rubble::time::{Instant, T_IFS};
 
 /// A packet buffer that can hold header and payload of any advertising or data channel packet.
 pub type PacketBuffer = [u8; MIN_PDU_BUF];

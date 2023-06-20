@@ -2,10 +2,9 @@ use super::*;
 use ::p256::{
     elliptic_curve::{
         sec1::{FromEncodedPoint, ToEncodedPoint},
-        Field,
-        Group,
+        Field, Group,
     },
-    ProjectivePoint, Scalar
+    ProjectivePoint, Scalar,
 };
 use rand_core::{CryptoRng, RngCore};
 
@@ -57,7 +56,11 @@ impl P256SecretKey {
         use ::p256::{elliptic_curve::ScalarPrimitive, NistP256};
 
         Self {
-            inner: Option::<ScalarPrimitive<NistP256>>::from(ScalarPrimitive::<NistP256>::from_bytes((&bytes).into())).unwrap().into()
+            inner: Option::<ScalarPrimitive<NistP256>>::from(
+                ScalarPrimitive::<NistP256>::from_bytes((&bytes).into()),
+            )
+            .unwrap()
+            .into(),
         }
     }
 }

@@ -5,7 +5,7 @@
 
 use fugit;
 
-pub type Instant = fugit::Instant::<u32, 1, 1_000_000>;
+pub type Instant = fugit::Instant<u32, 1, 1_000_000>;
 pub type Duration = fugit::Duration<u32, 1, 1_000_000>;
 pub const T_IFS: Duration = Duration::micros(150);
 

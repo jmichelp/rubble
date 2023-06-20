@@ -102,9 +102,7 @@ impl<C: Config> Connection<C> {
         this.hop_channel();
 
         let cmd = Cmd {
-            next_update: NextUpdate::At(
-                rx_end + lldata.end_of_tx_window() + Duration::micros(500),
-            ),
+            next_update: NextUpdate::At(rx_end + lldata.end_of_tx_window() + Duration::micros(500)),
             radio: RadioCmd::ListenData {
                 channel: this.channel,
                 access_address: this.access_address,

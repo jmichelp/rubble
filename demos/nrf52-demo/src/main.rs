@@ -39,12 +39,12 @@ mod app {
         timer::BleTimer,
         utils::get_device_address,
     };
-    
+
+    use crate::hal::gpio::Level;
+    use crate::logger::BUFFER_SIZE;
     use bbqueue::Consumer;
     use core::sync::atomic::{compiler_fence, Ordering};
-    use crate::hal::gpio::Level;
     use rtt_target::{rtt_init, UpChannel};
-    use crate::logger::BUFFER_SIZE;
 
     pub enum AppConfig {}
 
@@ -100,12 +100,7 @@ mod app {
 
         let ble_rx_buf: &'static mut _ = ctx.local.rx_buf.write([0; MIN_PDU_BUF]);
         let ble_tx_buf: &'static mut _ = ctx.local.tx_buf.write([0; MIN_PDU_BUF]);
-        let mut radio = BleRadio::new(
-            ctx.device.RADIO,
-            &ctx.device.FICR,
-            ble_tx_buf,
-            ble_rx_buf,
-        );
+        let mut radio = BleRadio::new(ctx.device.RADIO, &ctx.device.FICR, ble_tx_buf, ble_rx_buf);
 
         let log_sink = crate::logger::init(ble_timer.create_stamp_source());
 
@@ -121,9 +116,9 @@ mod app {
         let ble_r = Responder::new(
             tx,
             rx,
-            L2CAPState::new(BleChannelMap::with_attributes(crate::attrs::DemoAttrs::new(
-                p0.p0_17.into_push_pull_output(Level::High).degrade(),
-            ))),
+            L2CAPState::new(BleChannelMap::with_attributes(
+                crate::attrs::DemoAttrs::new(p0.p0_17.into_push_pull_output(Level::High).degrade()),
+            )),
         );
 
         // Send advertisement and set up regular interrupt
@@ -139,14 +134,15 @@ mod app {
 
         ble_ll.timer().configure_interrupt(next_update);
 
-        (Shared {
-            radio,
-            ble_ll,
-        }, Local {
-            ble_r,
-            log_channel,
-            log_sink
-        }, init::Monotonics())
+        (
+            Shared { radio, ble_ll },
+            Local {
+                ble_r,
+                log_channel,
+                log_sink,
+            },
+            init::Monotonics(),
+        )
     }
 
     #[task(binds = RADIO, shared = [radio, ble_ll], priority = 3)]
@@ -177,17 +173,17 @@ mod app {
                 return;
             }
             timer.clear_interrupt();
-    
+
             let cmd = ble_ll.update_timer(radio);
             radio.configure_receiver(cmd.radio);
-            ble_ll.timer().configure_interrupt(cmd.next_update);    
+            ble_ll.timer().configure_interrupt(cmd.next_update);
 
             if cmd.queued_work {
                 // If there's any lower-priority work to be done, ensure that happens.
                 // If we fail to spawn the task, it's already scheduled.
                 ble_worker::spawn().unwrap();
             }
-            });
+        });
     }
 
     #[idle(local = [log_sink, log_channel])]
@@ -215,5 +211,4 @@ mod app {
             ctx.local.ble_r.process_one().unwrap();
         }
     }
-
 }

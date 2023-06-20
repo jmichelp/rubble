@@ -15,9 +15,9 @@ use nrf52840_hal as hal;
 
 #[rtic::app(device = crate::hal::pac, peripherals = true, dispatchers=[TIMER1])]
 mod app {
+    use core::mem::MaybeUninit;
     // We need to import this crate explicitly so we have a panic handler
     use panic_halt as _;
-    use core::mem::MaybeUninit;
     use rubble::beacon::Beacon;
     use rubble::link::{ad_structure::AdStructure, MIN_PDU_BUF};
     use rubble_nrf5x::radio::{BleRadio, PacketBuffer};
@@ -25,7 +25,7 @@ mod app {
     use systick_monotonic::*;
 
     #[monotonic(binds=SysTick, default = true)]
-    type MyMono = Systick<1_000>;  // 1kHz = 1ms granularity
+    type MyMono = Systick<1_000>; // 1kHz = 1ms granularity
 
     #[shared]
     struct Shared {}
@@ -59,12 +59,7 @@ mod app {
         // Rubble currently requires an RX buffer even though the radio is only used as a TX-only beacon.
         let ble_rx_buf: &'static mut _ = ctx.local.rx_buf.write([0; MIN_PDU_BUF]);
         let ble_tx_buf: &'static mut _ = ctx.local.tx_buf.write([0; MIN_PDU_BUF]);
-        let radio = BleRadio::new(
-            ctx.device.RADIO,
-            &ctx.device.FICR,
-            ble_tx_buf,
-            ble_rx_buf,
-        );
+        let radio = BleRadio::new(ctx.device.RADIO, &ctx.device.FICR, ble_tx_buf, ble_rx_buf);
 
         let beacon = Beacon::new(
             device_address,
@@ -74,10 +69,7 @@ mod app {
 
         update::spawn_after(1.secs()).unwrap();
 
-        (Shared {}, Local {
-            radio,
-            beacon
-        }, init::Monotonics(mono))
+        (Shared {}, Local { radio, beacon }, init::Monotonics(mono))
     }
 
     /// Fire the beacon.
