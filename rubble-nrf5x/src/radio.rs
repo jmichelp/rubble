@@ -45,9 +45,11 @@ use crate::pac;
 use crate::pac::{radio::state::STATE_R, RADIO};
 use core::cmp;
 use core::sync::atomic::{compiler_fence, Ordering};
+use rubble::beacon::{BeaconScanner, ScanCallback};
 use rubble::config::Config;
+use rubble::link::filter::AddressFilter;
 use rubble::link::{
-    advertising, data, Cmd, LinkLayer, RadioCmd, Transmitter, CRC_POLY, MIN_PDU_BUF,
+    advertising, data, Cmd, LinkLayer, NextUpdate, RadioCmd, Transmitter, CRC_POLY, MIN_PDU_BUF,
 };
 use rubble::phy::{AdvertisingChannel, DataChannel};
 use rubble::time::{Instant, T_IFS};
@@ -280,25 +282,27 @@ impl BleRadio {
         }
     }
 
-    /// Call this when the `RADIO` interrupt fires.
-    ///
-    /// Automatically reconfigures the radio according to the `RadioCmd` returned by the BLE stack.
-    ///
-    /// Returns when the `update` method should be called the next time.
-    pub fn recv_interrupt<C: Config<Transmitter = Self>>(
-        &mut self,
-        timestamp: Instant,
-        ll: &mut LinkLayer<C>,
-    ) -> Option<Cmd> {
+    /// Acknowledge the DISABLED event
+    fn acknowledge_disabled_event(&self) -> Option<bool> {
         if self.radio.events_disabled.read().bits() == 0 {
             return None;
         }
 
-        // "Subsequent reads and writes cannot be moved ahead of preceding reads."
+        // Subsequent reads and writes cannot be moved ahead of preceding reads.
         compiler_fence(Ordering::Acquire);
 
-        // Acknowledge DISABLED event:
         self.radio.events_disabled.reset();
+        Some(true)
+    }
+
+    /// Call this when the `RADIO` interrupt fires when using the [`LinkLayer`].
+    /// [`LinkLayer`]: ../../rubble/link/struct.LinkLayer.html
+    pub fn recv_ll_interrupt<C: Config<Transmitter = Self>>(
+        &mut self,
+        timestamp: Instant,
+        ll: &mut LinkLayer<C>,
+    ) -> Option<Cmd> {
+        self.acknowledge_disabled_event()?;
 
         let crc_ok = self.radio.crcstatus.read().crcstatus().is_crcok();
 
@@ -332,6 +336,43 @@ impl BleRadio {
         };
 
         Some(cmd)
+    }
+
+    /// Call this whent he `RADIO` interrupt fires when using the [`BeaconScanner`]
+    ///
+    /// The radio is automatically reconfigured to listen on the next advertisement channel.
+    ///
+    /// Returns when the [`timer_update`] method should be called the next time.
+    ///
+    /// [`BeaconScanner`]: ../../rubble/beacon/struct.BeaconScanner.html
+    /// [`timer_update`]: ../../rubble/beacon/struct.BeaconScanner.html#method.timer_update
+    pub fn recv_beacon_interrupt<C: ScanCallback, F: AddressFilter>(
+        &mut self,
+        scanner: &mut BeaconScanner<C, F>,
+    ) -> Option<NextUpdate> {
+        self.acknowledge_disabled_event()?;
+
+        // Check CRC
+        let crc_ok = self.radio.crcstatus.read().crcstatus().is_crcok();
+
+        // When we get here, the radio must have transitioned to DISABLED state.
+        assert!(self.state().is_disabled());
+
+        // Parse header
+        let rx_buf = self.rx_buf.as_ref().unwrap();
+        let header = advertising::Header::parse(*rx_buf);
+
+        // Check that `payload_length` is in bounds
+        let pl_lim = cmp::min(2 + usize::from(header.payload_length()), rx_buf.len());
+
+        // Process payload
+        let payload = &rx_buf[2..pl_lim];
+        let cmd = scanner.process_adv_packet(header, payload, crc_ok);
+
+        // Reconfigure radio
+        self.configure_receiver(cmd.radio);
+
+        Some(cmd.next_update)
     }
 
     /// Perform preparations to receive or send on an advertising channel.

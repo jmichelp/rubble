@@ -150,7 +150,7 @@ mod app {
         let ble_ll = ctx.shared.ble_ll;
         let radio = ctx.shared.radio;
         (radio, ble_ll).lock(|radio, ble_ll| {
-            if let Some(cmd) = radio.recv_interrupt(ble_ll.timer().now(), ble_ll) {
+            if let Some(cmd) = radio.recv_ll_interrupt(ble_ll.timer().now(), ble_ll) {
                 radio.configure_receiver(cmd.radio);
                 ble_ll.timer().configure_interrupt(cmd.next_update);
 
