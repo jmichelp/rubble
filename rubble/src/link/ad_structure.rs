@@ -151,6 +151,17 @@ impl<'a> FromBytes<'a> for AdStructure<'a> {
                 let uuids = ServiceUuids::<Uuid16>::from_bytes(&mut ByteReader::new(ty_and_data))?;
                 AdStructure::ServiceUuids16(uuids)
             }
+            Type::MANUFACTURER_SPECIFIC_DATA => {
+                // Must be at least 2 for the company id
+                if data.len() < 2 {
+                    return Err(Error::InvalidLength);
+                }
+                let company = u16::from_le_bytes(data[..2].try_into().unwrap());
+                AdStructure::ManufacturerSpecificData {
+                    company_identifier: CompanyId::from_raw(company),
+                    payload: &data[2..],
+                }
+            }
             _ => AdStructure::Unknown { ty, data },
         })
     }
