@@ -18,9 +18,7 @@ use nrf52840_hal as hal;
 
 #[rtic::app(device = crate::hal::pac, peripherals = true)]
 mod app {
-    use bbqueue::Consumer;
     use core::mem::MaybeUninit;
-    use core::sync::atomic::{compiler_fence, Ordering};
     use rtt_target::{rprint, rprintln, rtt_init, set_print_channel};
     use rubble::beacon::{BeaconScanner, ScanCallback};
     use rubble::link::{ad_structure::AdStructure, filter::AllowAll, DeviceAddress, MIN_PDU_BUF};
