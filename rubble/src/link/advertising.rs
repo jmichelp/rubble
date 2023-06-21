@@ -823,7 +823,10 @@ enum_with_unknown! {
 impl PduType {
     /// Returns whether this PDU type is a beacon advertisement.
     pub fn is_beacon(&self) -> bool {
-        *self == PduType::AdvNonconnInd
+        match self {
+            PduType::AdvNonconnInd | PduType::AdvInd => true,
+            _ => false,
+        }
     }
 
     /// Whether AD structures can follow the fixed data in a PDU of this type.
