@@ -39,7 +39,7 @@ pub enum AdStructure<'a> {
     /// Service data with 16-bit service UUID.
     ServiceData16 {
         /// The 16-bit service UUID.
-        uuid: u16,
+        uuid: Uuid16,
         /// The associated service data. May be empty.
         data: &'a [u8],
     },
@@ -90,8 +90,7 @@ impl<'a> ToBytes for AdStructure<'a> {
             AdStructure::ServiceUuids128(uuids) => uuids.to_bytes(buf)?,
             AdStructure::ServiceData16 { uuid, data } => {
                 buf.write_u8(Type::SERVICE_DATA_16BIT_UUID)?;
-                buf.write_u8(*uuid as u8)?;
-                buf.write_u8((*uuid >> 8) as u8)?;
+                uuid.to_bytes(buf)?;
                 buf.write_slice(data)?;
             }
             AdStructure::CompleteLocalName(name) => {
@@ -150,6 +149,17 @@ impl<'a> FromBytes<'a> for AdStructure<'a> {
             | Type::INCOMPLETE_LIST_OF_16BIT_SERVICE_UUIDS => {
                 let uuids = ServiceUuids::<Uuid16>::from_bytes(&mut ByteReader::new(ty_and_data))?;
                 AdStructure::ServiceUuids16(uuids)
+            }
+            Type::SERVICE_DATA_16BIT_UUID => {
+                // Must be at least 2 for the Uuid16
+                if data.len() < 2 {
+                    return Err(Error::InvalidLength);
+                }
+                let uuid = u16::from_le_bytes(data[..2].try_into().unwrap());
+                AdStructure::ServiceData16 {
+                    uuid: Uuid16(uuid),
+                    data: &data[2..],
+                }
             }
             Type::MANUFACTURER_SPECIFIC_DATA => {
                 // Must be at least 2 for the company id
