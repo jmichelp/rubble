@@ -376,7 +376,7 @@ impl BleRadio {
         Some(cmd)
     }
 
-    /// Call this whent he `RADIO` interrupt fires when using the [`BeaconScanner`]
+    /// Call this when the `RADIO` interrupt fires when using the [`BeaconScanner`]
     ///
     /// The radio is automatically reconfigured to listen on the next advertisement channel.
     ///
@@ -386,6 +386,7 @@ impl BleRadio {
     /// [`timer_update`]: ../../rubble/beacon/struct.BeaconScanner.html#method.timer_update
     pub fn recv_beacon_interrupt<C: ScanCallback, F: AddressFilter>(
         &mut self,
+        timestamp: Instant,
         scanner: &mut BeaconScanner<C, F>,
     ) -> Option<NextUpdate> {
         self.acknowledge_disabled_event()?;
@@ -406,7 +407,7 @@ impl BleRadio {
         // Process payload
         let payload = &rx_buf[2..pl_lim];
         let metadata = Metadata {
-            timestamp: None,
+            timestamp: Some(timestamp),
             rssi: self.rssi(),
             crc_ok,
             ..Default::default()

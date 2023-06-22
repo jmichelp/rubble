@@ -34,6 +34,7 @@ mod app {
         where
             I: Iterator<Item = AdStructure<'a>>,
         {
+            rprint!("[{:?} ", metadata.timestamp.unwrap().ticks());
             if let Some(rssi) = metadata.rssi {
                 rprint!("RSSI:{:?}dBm ", rssi);
             }
@@ -116,7 +117,7 @@ mod app {
         let radio = ctx.shared.radio;
 
         (timer, scanner, radio).lock(|timer, scanner, radio| {
-            if let Some(next_update) = radio.recv_beacon_interrupt(scanner) {
+            if let Some(next_update) = radio.recv_beacon_interrupt(timer.now(), scanner) {
                 timer.configure_interrupt(next_update);
             }
         });
