@@ -49,7 +49,8 @@ use rubble::beacon::{BeaconScanner, ScanCallback};
 use rubble::config::Config;
 use rubble::link::filter::AddressFilter;
 use rubble::link::{
-    advertising, data, Cmd, LinkLayer, NextUpdate, RadioCmd, Transmitter, CRC_POLY, MIN_PDU_BUF,
+    advertising, data, Cmd, LinkLayer, Metadata, NextUpdate, RadioCmd, Transmitter, CRC_POLY,
+    MIN_PDU_BUF,
 };
 use rubble::phy::{AdvertisingChannel, DataChannel};
 use rubble::time::{Instant, T_IFS};
@@ -169,10 +170,18 @@ impl BleRadio {
         }*/
 
         // Configure shortcuts to simplify and speed up sending and receiving packets.
+        // We also enable RSSI measurement automatically
         radio.shorts.write(|w| {
             // start transmission/recv immediately after ramp-up
             // disable radio when transmission/recv is done
-            w.ready_start().enabled().end_disable().enabled()
+            w.ready_start()
+                .enabled()
+                .end_disable()
+                .enabled()
+                .address_rssistart()
+                .enabled()
+                .disabled_rssistop()
+                .enabled()
         });
 
         // We can now start the TXEN/RXEN tasks and the radio will do the rest and return to the
@@ -189,6 +198,12 @@ impl BleRadio {
     /// Returns the current radio state.
     pub fn state(&self) -> STATE_R {
         self.radio.state.read().state()
+    }
+
+    /// Returns the measured RSSI in dBm when the radio supports it
+    pub fn rssi(&self) -> Option<i8> {
+        let rssi = self.radio.rssisample.read().rssisample().bits();
+        Some(0 - (rssi as i8))
     }
 
     /// Configures the Radio for (not) receiving data according to `cmd`.
@@ -230,9 +245,16 @@ impl BleRadio {
                 self.radio.rxaddresses.write(|w| w.addr0().enabled());
 
                 // Enable the correct shortcuts in case it was changed in a previous connection.
-                self.radio
-                    .shorts
-                    .write(|w| w.ready_start().enabled().end_disable().enabled());
+                self.radio.shorts.write(|w| {
+                    w.ready_start()
+                        .enabled()
+                        .end_disable()
+                        .enabled()
+                        .address_rssistart()
+                        .enabled()
+                        .disabled_rssistop()
+                        .enabled()
+                });
 
                 // "Preceding reads and writes cannot be moved past subsequent writes."
                 compiler_fence(Ordering::Release);
@@ -277,6 +299,10 @@ impl BleRadio {
                         .enabled()
                         .ready_start()
                         .enabled()
+                        .address_rssistart()
+                        .enabled()
+                        .disabled_rssistop()
+                        .enabled()
                 });
             }
         }
@@ -316,7 +342,13 @@ impl BleRadio {
             let rx_buf = self.rx_buf.take().unwrap();
             let pl_lim = cmp::min(2 + usize::from(header.payload_length()), rx_buf.len());
             let payload = &rx_buf[2..pl_lim];
-            let cmd = ll.process_adv_packet(timestamp, self, header, payload, crc_ok);
+            let metadata = Metadata {
+                timestamp: Some(timestamp),
+                rssi: self.rssi(),
+                crc_ok,
+                ..Default::default()
+            };
+            let cmd = ll.process_adv_packet(self, header, payload, metadata);
             self.rx_buf = Some(rx_buf);
             cmd
         } else {
@@ -330,7 +362,13 @@ impl BleRadio {
             let rx_buf = self.rx_buf.take().unwrap();
             let pl_lim = cmp::min(2 + usize::from(header.payload_length()), rx_buf.len());
             let payload = &rx_buf[2..pl_lim];
-            let cmd = ll.process_data_packet(timestamp, self, header, payload, crc_ok);
+            let metadata = Metadata {
+                timestamp: Some(timestamp),
+                rssi: self.rssi(),
+                crc_ok,
+                ..Default::default()
+            };
+            let cmd = ll.process_data_packet(self, header, payload, metadata);
             self.rx_buf = Some(rx_buf);
             cmd
         };
@@ -367,7 +405,14 @@ impl BleRadio {
 
         // Process payload
         let payload = &rx_buf[2..pl_lim];
-        let cmd = scanner.process_adv_packet(header, payload, crc_ok);
+        let metadata = Metadata {
+            timestamp: None,
+            rssi: self.rssi(),
+            crc_ok,
+            ..Default::default()
+        };
+
+        let cmd = scanner.process_adv_packet(header, payload, metadata);
 
         // Reconfigure radio
         self.configure_receiver(cmd.radio);

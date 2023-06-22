@@ -4,7 +4,7 @@ use crate::link::data::{self, Header, Llid, Pdu};
 use crate::link::llcp::{ConnectionUpdateData, ControlPdu};
 use crate::link::queue::{Consume, Consumer, Producer};
 use crate::link::{
-    advertising::ConnectRequestData, channel_map::ChannelMap, Cmd, CompanyId, FeatureSet,
+    advertising::ConnectRequestData, channel_map::ChannelMap, Cmd, CompanyId, FeatureSet, Metadata,
     NextUpdate, RadioCmd, SeqNum, Transmitter,
 };
 use crate::time::{Duration, Instant, Timer};
@@ -120,22 +120,21 @@ impl<C: Config> Connection<C> {
     /// Returns `Err(())` when the connection is ended (not necessarily due to an error condition).
     pub(crate) fn process_data_packet(
         &mut self,
-        rx_end: Instant,
         tx: &mut C::Transmitter,
         header: data::Header,
         payload: &[u8],
-        crc_ok: bool,
+        metadata: Metadata,
     ) -> Result<Cmd, ()> {
         // If the sequence number of the packet is the same as our next expected sequence number,
         // the packet contains new data that we should try to process. However, if the CRC is bad,
         // we'll never try to process the data and instead request a retransmission.
-        let is_new = header.sn() == self.next_expected_seq_num && crc_ok;
+        let is_new = header.sn() == self.next_expected_seq_num && metadata.crc_ok;
 
         // If the packet's "NESN" is equal to our last sent sequence number + 1, the other side has
         // acknowledged our last packet (and is now expecting one with an incremented seq. num.).
         // However, if the CRC is bad, the bit might be flipped, so we cannot assume that the packet
         // was acknowledged and thus always retransmit.
-        let acknowledged = header.nesn() == self.transmit_seq_num + SeqNum::ONE && crc_ok;
+        let acknowledged = header.nesn() == self.transmit_seq_num + SeqNum::ONE && metadata.crc_ok;
 
         let is_empty = header.llid() == Llid::DataCont && payload.is_empty();
 
@@ -268,7 +267,7 @@ impl<C: Config> Connection<C> {
             if let Some(update) = self.update_data.take() {
                 if update.instant() == self.conn_event_count.0 {
                     // Next conn event will the the first one with these parameters.
-                    let result = self.apply_llcp_update(update, rx_end);
+                    let result = self.apply_llcp_update(update, metadata.timestamp.unwrap());
                     info!("LLCP patch applied: {:?} -> {:?}", update, result);
                     if let Some(mut cmd) = result {
                         cmd.queued_work = queued_work;
@@ -290,13 +289,13 @@ impl<C: Config> Connection<C> {
             self.conn_event_count,
             last_channel.index(),
             self.channel.index(),
-            if crc_ok { "" } else { "BADCRC, " },
+            if metadata.crc_ok { "" } else { "BADCRC, " },
             header,
             HexSlice(payload)
         );
 
         Ok(Cmd {
-            next_update: NextUpdate::At(rx_end + self.conn_event_timeout()),
+            next_update: NextUpdate::At(metadata.timestamp.unwrap() + self.conn_event_timeout()),
             radio: RadioCmd::ListenData {
                 channel: self.channel,
                 access_address: self.access_address,

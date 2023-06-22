@@ -292,12 +292,13 @@ impl<C: Config> LinkLayer<C> {
     /// * **`crc_ok`**: Whether the packet's CRC is correct.
     pub fn process_adv_packet(
         &mut self,
-        rx_end: Instant,
         tx: &mut C::Transmitter,
         header: advertising::Header,
         payload: &[u8],
-        crc_ok: bool,
+        metadata: Metadata,
     ) -> Cmd {
+        let rx_end = metadata.timestamp.unwrap();
+
         let pdu = advertising::Pdu::from_header_and_payload(header, &mut ByteReader::new(payload));
 
         if let Ok(pdu) = pdu {
@@ -307,7 +308,7 @@ impl<C: Config> LinkLayer<C> {
                 ..
             } = &mut self.state
             {
-                if crc_ok && pdu.receiver() == Some(&self.dev_addr) {
+                if metadata.crc_ok && pdu.receiver() == Some(&self.dev_addr) {
                     // Got a packet addressed at us, can be a scan or connect request
                     match pdu {
                         Pdu::ScanRequest { .. } => {
@@ -334,7 +335,7 @@ impl<C: Config> LinkLayer<C> {
 
         trace!(
             "ADV<- {}{:?}, {:?}\n{:?}\n",
-            if crc_ok { "" } else { "BADCRC " },
+            if metadata.crc_ok { "" } else { "BADCRC " },
             header,
             HexSlice(payload),
             pdu,
@@ -357,14 +358,13 @@ impl<C: Config> LinkLayer<C> {
     /// Process an incoming data channel packet.
     pub fn process_data_packet(
         &mut self,
-        rx_end: Instant,
         tx: &mut C::Transmitter,
         header: data::Header,
         payload: &[u8],
-        crc_ok: bool,
+        metadata: Metadata,
     ) -> Cmd {
         if let State::Connection(conn) = &mut self.state {
-            match conn.process_data_packet(rx_end, tx, header, payload, crc_ok) {
+            match conn.process_data_packet(tx, header, payload, metadata) {
                 Ok(cmd) => cmd,
                 Err(()) => {
                     debug!("connection ended, standby");
@@ -452,6 +452,24 @@ impl<C: Config> LinkLayer<C> {
     pub fn is_connected(&self) -> bool {
         matches!(self.state, State::Connection { .. })
     }
+}
+
+/// Metdata regarding the received frame
+#[must_use]
+#[derive(Debug, Default, Clone)]
+pub struct Metadata {
+    pub timestamp: Option<Instant>,
+
+    /// Measured RSSI in dBm
+    pub rssi: Option<i8>,
+
+    /// Whether the CRC for the received frame was computed as valid
+    pub crc_ok: bool,
+
+    /// Time of flight
+    pub tof: Option<u8>,
+
+    pub angle: Option<i16>,
 }
 
 /// Command returned by the Link-Layer to the user.

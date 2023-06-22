@@ -3,7 +3,7 @@
 use crate::link::advertising::{Header, Pdu, PduBuf};
 use crate::link::filter::{self, AddressFilter, ScanFilter};
 use crate::link::{
-    ad_structure::AdStructure, Cmd, DeviceAddress, NextUpdate, RadioCmd, Transmitter,
+    ad_structure::AdStructure, Cmd, DeviceAddress, Metadata, NextUpdate, RadioCmd, Transmitter,
 };
 use crate::phy::AdvertisingChannel;
 use crate::time::{Duration, Instant};
@@ -61,7 +61,7 @@ pub trait ScanCallback {
     ///
     /// * **`adv_addr`**: Address of the device sending the beacon.
     /// * **`adv_data`**: Advertising data structures attached to the beacon.
-    fn beacon<'a, I>(&mut self, adv_addr: DeviceAddress, adv_data: I)
+    fn beacon<'a, I>(&mut self, adv_addr: DeviceAddress, adv_data: I, metadata: Metadata)
     where
         I: Iterator<Item = AdStructure<'a>>;
 }
@@ -135,13 +135,18 @@ impl<C: ScanCallback, F: AddressFilter> BeaconScanner<C, F> {
     ///
     /// This should be called whenever the radio receives a packet on the configured advertising
     /// channel.
-    pub fn process_adv_packet(&mut self, header: Header, payload: &[u8], crc_ok: bool) -> Cmd {
-        if crc_ok && header.type_().is_beacon() {
+    pub fn process_adv_packet(
+        &mut self,
+        header: Header,
+        payload: &[u8],
+        metadata: Metadata,
+    ) -> Cmd {
+        if metadata.crc_ok && header.type_().is_beacon() {
             // Partially decode to get the device ID and run it through the filter
             if let Ok(pdu) = Pdu::from_header_and_payload(header, &mut ByteReader::new(payload)) {
                 if self.filter.should_scan(*pdu.sender()) {
                     let ad = pdu.advertising_data().unwrap();
-                    self.cb.beacon(*pdu.sender(), ad);
+                    self.cb.beacon(*pdu.sender(), ad, metadata);
                 }
             }
         }

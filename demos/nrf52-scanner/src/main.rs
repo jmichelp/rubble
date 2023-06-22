@@ -21,6 +21,7 @@ mod app {
     use core::mem::MaybeUninit;
     use rtt_target::{rprint, rprintln, rtt_init, set_print_channel};
     use rubble::beacon::{BeaconScanner, ScanCallback};
+    use rubble::link::Metadata;
     use rubble::link::{ad_structure::AdStructure, filter::AllowAll, DeviceAddress, MIN_PDU_BUF};
     use rubble::time::{Duration, Timer};
     use rubble_nrf5x::radio::{BleRadio, PacketBuffer};
@@ -29,20 +30,18 @@ mod app {
     pub struct BeaconScanCallback;
 
     impl ScanCallback for BeaconScanCallback {
-        fn beacon<'a, I>(&mut self, addr: DeviceAddress, data: I)
+        fn beacon<'a, I>(&mut self, addr: DeviceAddress, data: I, metadata: Metadata)
         where
             I: Iterator<Item = AdStructure<'a>>,
         {
+            if let Some(rssi) = metadata.rssi {
+                rprint!("RSSI:{:?}dBm ", rssi);
+            }
             rprint!("BDADDR:{:?} DATA:", addr);
             let mut first = true;
             for packet in data {
-                match first {
-                    true => {
-                        rprint!("{:02x?}", packet);
-                        first = false;
-                    }
-                    false => rprint!(" / {:02x?}", packet),
-                };
+                rprint!("{}{:02x?}", if first { " " } else { " / " }, packet);
+                first = false;
             }
             rprintln!("");
         }
