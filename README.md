@@ -23,7 +23,7 @@ API documentation can be viewed [on docs.rs][docs-rs] for the latest crates.io r
 or [here for API docs generated from master][docs-master].
 
 [docs-rs]: https://docs.rs/rubble/
-[docs-master]: https://jonas-schievink.github.io/rubble/
+[docs-master]: https://jmichelp.github.io/rubble/
 
 ## Contributing
 
