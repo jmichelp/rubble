@@ -402,6 +402,10 @@ impl ConnectRequestData {
     pub fn supervision_timeout(&self) -> Duration {
         self.timeout
     }
+
+    pub fn sca(&self) -> SleepClockAccuracy {
+        self.sca
+    }
 }
 
 impl FromBytes<'_> for ConnectRequestData {
