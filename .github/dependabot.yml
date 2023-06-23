@@ -1,0 +1,22 @@
+version: 2
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "[cargo]"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "tech-debt"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "[github]"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "CI"
