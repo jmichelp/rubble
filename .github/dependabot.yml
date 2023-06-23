@@ -9,7 +9,7 @@ updates:
       include: "scope"
     labels:
       - "dependencies"
-      - "tech-debt"
+      - "enhancement"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
