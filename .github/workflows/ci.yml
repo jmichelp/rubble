@@ -30,11 +30,15 @@ jobs:
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        override: true
-        components: rustfmt
+      run: |
+        rustup toolchain install stable --component rustfmt
+        rustup default stable
+        rustup override set stable
+        echo CARGO_TERM_COLOR=always >> $GITHUB_ENV
+        echo CARGO_INCREMENTAL=0 >> $GITHUB_ENV
+        echo RUST_BACKTRACE=1 >> $GITHUB_ENV
+        rustc --version --verbose
+      shell: bash
 
     - name: Install targets
       run: rustup target add thumbv7em-none-eabi thumbv6m-none-eabi
