@@ -24,11 +24,13 @@ jobs:
         toolchain: stable
         override: true
         components: rustfmt
+
     - name: Install targets
       run: rustup target add thumbv7em-none-eabi thumbv6m-none-eabi
 
     - name: Test
       run: cargo test
+
     - name: Upload docs
       uses: peaceiris/actions-gh-pages@v3
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
