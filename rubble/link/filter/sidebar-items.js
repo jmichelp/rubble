@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["AdvFilter","AllowAll","ScanFilter","WhitelistFilter"],"trait":["AddressFilter"],"type":["SingleIter","SliceIter"]};

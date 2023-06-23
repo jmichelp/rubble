@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["run_tests"],"struct":["Consume","SimpleConsumer","SimpleProducer","SimpleQueue"],"trait":["Consumer","PacketQueue","Producer"]};

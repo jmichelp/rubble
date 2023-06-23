@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["AttUuid","AttributeAccessPermissions"],"mod":["handle","pdus","server","uuid"],"struct":["Attribute","AttributeServer","AttributeServerTx","Handle","HandleRange","NoAttributes"],"trait":["AttributeProvider"]};

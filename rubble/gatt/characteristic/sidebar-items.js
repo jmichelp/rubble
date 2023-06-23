@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Appearance"],"macro":["const_or"],"struct":["BatteryLevel","Properties"],"trait":["Characteristic"]};

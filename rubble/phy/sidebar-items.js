@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["CHECK"],"fn":["rf_channel_freq","whitening_iv"],"static":["DEFMT_LOG_STATEMENT","S"],"struct":["AdvertisingChannel","DataChannel"],"trait":["Radio"]};

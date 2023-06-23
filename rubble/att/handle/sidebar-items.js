@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"static":["S"],"struct":["Handle","HandleRange","RawHandleRange"]};

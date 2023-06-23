@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["T_IFS"],"trait":["Timer"],"type":["Duration","Instant"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["signaling"],"static":["S"],"struct":["BleChannelMap","Channel","ChannelData","Header","L2CAPState","L2CAPStateTx","Message","Sender"],"trait":["ChannelMapper","Protocol","ProtocolObj"]};

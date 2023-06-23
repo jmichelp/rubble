@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["AdStructure","Type"],"struct":["Flags","ServiceUuids"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["ACCESS_ADDRESS","CRC_PRESET","MAX_PAYLOAD_SIZE","RXADD_MASK","TXADD_MASK"],"enum":["Pdu","PduType","SleepClockAccuracy"],"struct":["ConnectRequestData","Header","PduBuf"]};

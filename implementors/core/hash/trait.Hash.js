@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"rubble":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/hash/trait.Hash.html\" title=\"trait core::hash::Hash\">Hash</a> for <a class=\"struct\" href=\"rubble/l2cap/struct.Channel.html\" title=\"struct rubble::l2cap::Channel\">Channel</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
