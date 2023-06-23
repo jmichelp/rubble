@@ -46,16 +46,12 @@ impl Uuid128 {
     /// This is meant to be used in constant contexts.
     pub const fn parse_static(s: &'static str) -> Self {
         const fn parse_nibble(nibble: u8) -> u8 {
-            let hex_digit_out_of_range = 1;
             match nibble {
                 b'0'..=b'9' => nibble - b'0',
                 b'a'..=b'f' => nibble - b'a' + 10,
-                _ => [0][hex_digit_out_of_range],
+                _ => panic!("hex digit out of range"),
             }
         }
-
-        let expected_dash = 1;
-        let unexpected_trailing_data = 1;
 
         // full UUID: 0000fd6f-0000-1000-8000-00805f9b34fb (36 chars/bytes)
         // dashes at offsets 8, 13, 18, 23
@@ -76,7 +72,7 @@ impl Uuid128 {
             ($s:ident[$i:ident..]) => {{
                 match $s.as_bytes()[$i] {
                     b'-' => {}
-                    _ => [()][expected_dash],
+                    _ => panic!("expected dash"),
                 }
                 $i += 1;
             }};
@@ -104,9 +100,7 @@ impl Uuid128 {
         bytes[15] = eat_byte!(s[index..]);
 
         // String must end here.
-        if s.len() > index {
-            [()][unexpected_trailing_data];
-        }
+        assert!(s.len() <= index, "unexpected trailing data");
 
         Uuid128(bytes)
     }
