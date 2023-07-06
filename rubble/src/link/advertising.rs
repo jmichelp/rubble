@@ -68,6 +68,7 @@ pub enum Pdu<'a> {
         /// AD structures sent along with the advertisement.
         advertising_data: BytesOr<'a, [AdStructure<'a>]>,
     },
+    ExtendedAdvertising {},
 
     /// Scan request sent from a scanner to an advertising device.
     ///
@@ -230,6 +231,7 @@ impl<'a> Pdu<'a> {
                 },
                 lldata: ConnectRequestData::from_bytes(payload)?,
             },
+            PduType::AdvExtInd => todo!(),
             PduType::Unknown(_) => return Err(Error::InvalidValue),
         })
     }
@@ -258,6 +260,8 @@ impl<'a> Pdu<'a> {
             ScanRequest { scanner_addr, .. } => scanner_addr,
 
             ConnectRequest { initiator_addr, .. } => initiator_addr,
+
+            ExtendedAdvertising => todo!(),
         }
     }
 
@@ -280,6 +284,7 @@ impl<'a> Pdu<'a> {
             | ConnectRequest {
                 advertiser_addr, ..
             } => Some(advertiser_addr),
+            ExtendedAdvertising => todo!(),
         }
     }
 
@@ -291,6 +296,7 @@ impl<'a> Pdu<'a> {
             ConnectableUndirected { .. } => PduType::AdvInd,
             ConnectableDirected { .. } => PduType::AdvDirectInd,
             NonconnectableUndirected { .. } => PduType::AdvNonconnInd,
+            ExtendedAdvertising { .. } => PduType::AdvExtInd,
             ScannableUndirected { .. } => PduType::AdvScanInd,
             ScanRequest { .. } => PduType::ScanReq,
             ScanResponse { .. } => PduType::ScanRsp,
@@ -316,6 +322,7 @@ impl<'a> Pdu<'a> {
             } => Some(advertising_data.iter()),
             ScanResponse { scan_data, .. } => Some(scan_data.iter()),
             ScanRequest { .. } | ConnectableDirected { .. } | ConnectRequest { .. } => None,
+            ExtendedAdvertising => todo!(),
         }
     }
 }
@@ -842,6 +849,7 @@ impl PduType {
                 true
             }
             PduType::AdvDirectInd
+            | PduType::AdvExtInd
             | PduType::ScanReq
             | PduType::ConnectReq
             | PduType::Unknown(_) => false,
