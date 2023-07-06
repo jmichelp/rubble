@@ -206,6 +206,20 @@ impl BleRadio {
         Some(0 - (rssi as i8))
     }
 
+    /// Returns the current radio channel
+    pub fn channel(&self) -> u8 {
+        // The number we read is the radio channel, corresponding to
+        // `2400MHz + radio.frequency`
+        match self.radio.frequency.read().frequency().bits() >> 1 {
+            1 => 37,
+            ch @ 2..=12 => ch - 2,
+            13 => 38,
+            ch @ 14..=39 => ch - 3,
+            40 => 39,
+            _ => unreachable!(),
+        }
+    }
+
     /// Configures the Radio for (not) receiving data according to `cmd`.
     pub fn configure_receiver(&mut self, cmd: RadioCmd) {
         // Waits for the end of any ongoing transmissions. Don't wait if we lost the last connection
@@ -344,6 +358,8 @@ impl BleRadio {
             let payload = &rx_buf[2..pl_lim];
             let metadata = Metadata {
                 timestamp: Some(timestamp),
+                channel: self.channel(),
+                pdu_type: Some(header.type_()),
                 rssi: self.rssi(),
                 crc_ok,
                 ..Default::default()
@@ -364,6 +380,7 @@ impl BleRadio {
             let payload = &rx_buf[2..pl_lim];
             let metadata = Metadata {
                 timestamp: Some(timestamp),
+                channel: self.channel(),
                 rssi: self.rssi(),
                 crc_ok,
                 ..Default::default()
@@ -408,6 +425,8 @@ impl BleRadio {
         let payload = &rx_buf[2..pl_lim];
         let metadata = Metadata {
             timestamp: Some(timestamp),
+            channel: self.channel(),
+            pdu_type: Some(header.type_()),
             rssi: self.rssi(),
             crc_ok,
             ..Default::default()

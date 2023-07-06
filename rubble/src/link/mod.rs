@@ -131,6 +131,7 @@ pub mod queue;
 mod responder;
 mod seq_num;
 
+use self::advertising::PduType;
 pub use self::comp_id::*;
 pub use self::connection::Connection;
 pub use self::device_address::*;
@@ -462,6 +463,12 @@ pub struct Metadata {
 
     /// Measured RSSI in dBm
     pub rssi: Option<i8>,
+
+    /// Channel (1-39)
+    pub channel: u8,
+
+    /// Complete header of the PDU
+    pub pdu_type: Option<PduType>,
 
     /// Whether the CRC for the received frame was computed as valid
     pub crc_ok: bool,
