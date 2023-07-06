@@ -795,7 +795,7 @@ enum_with_unknown! {
     /// 4-bit PDU type in [`Header`].
     ///
     /// For more details, see [`PduBuf`].
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, Clone, PartialEq, Eq)]
     pub enum PduType(u8) {
         /// Connectable undirected advertising event (`ADV_IND`).
         AdvInd = 0b0000,
@@ -805,6 +805,8 @@ enum_with_unknown! {
         AdvNonconnInd = 0b0010,
         /// Scannable undirected advertising event (`ADV_SCAN_IND`).
         AdvScanInd = 0b0110,
+        /// Extended advertising (`ADV_EXT_IND`)
+        AdvExtInd = 0b0111,
 
         /// Scan request (`SCAN_REQ`).
         ///

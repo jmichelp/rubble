@@ -387,6 +387,14 @@ impl Type {
     const PB_ADV: u8 = 0x29;
     const MESH_MESSAGE: u8 = 0x2A;
     const MESH_BEACON: u8 = 0x2B;
+    const BIG_INFO: u8 = 0x2C;
+    const BROADCAST_CODE: u8 = 0x2D;
+    const RESOLVABLE_SET_IDENTIFIER: u8 = 0x2E;
+    const ADVERTISING_INTERVAL_LONG: u8 = 0x2F;
+    const BROADCAST_NAME: u8 = 0x30;
+    const ENCRYPTED_ADVERTISING_ADDRESS: u8 = 0x31;
+    const PERIODIC_ADVERTISING_RESPONSE_TIMING_INFORMATION: u8 = 0x32;
+    const ELECTRONIC_SHELF_LABEL: u8 = 0x34;
     const THREE_D_INFORMATION_DATA: u8 = 0x3D;
     const _3D_INFORMATION_DATA: u8 = 0x3D;
     const MANUFACTURER_SPECIFIC_DATA: u8 = 0xFF;

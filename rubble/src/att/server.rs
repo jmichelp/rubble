@@ -399,6 +399,9 @@ impl<A: AttributeProvider> AttributeServer<A> {
             | AttPdu::FindByTypeValueReq { .. }
             | AttPdu::ReadMultipleReq { .. }
             | AttPdu::SignedWriteCommand { .. }
+            | AttPdu::ReadMultipleVarReq { .. }
+            | AttPdu::ReadMultipleVarRsp { .. }
+            | AttPdu::MultipleHandleValueNotification { .. }
             | AttPdu::HandleValueConfirmation { .. } => {
                 if msg.opcode().is_command() {
                     // According to the spec, unknown Command PDUs should be ignored

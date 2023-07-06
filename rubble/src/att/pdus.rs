@@ -44,6 +44,10 @@ enum_with_unknown! {
         UnsupportedGroupType = 0x10,
         /// Server didn't have enough resources to complete a request.
         InsufficientResources = 0x11,
+        /// The server requests the client to rediscover the database.
+        DatabaseOutOfSync = 0x12,
+        /// The attribute parameter value was not allowed.
+        ValueNotAllowed = 0x13
     }
 }
 
@@ -228,6 +232,9 @@ enum_with_unknown! {
         PrepareWriteRsp = 0x17,
         ExecuteWriteReq = 0x18,
         ExecuteWriteRsp = 0x19,
+        ReadMultipleVarReq = 0x20,
+        ReadMultipleVarRsp = 0x21,
+        MultipleHandleValueNotification = 0x23,
         HandleValueNotification = 0x1B,
         HandleValueIndication = 0x1D,
         HandleValueConfirmation = 0x1E,
@@ -367,6 +374,15 @@ pub enum AttPdu<'a> {
         flags: u8,
     },
     ExecuteWriteRsp,
+    ReadMultipleVarReq {
+        handles: HexSlice<&'a [u8]>,
+    },
+    ReadMultipleVarRsp {
+        values: HexSlice<&'a [u8]>,
+    },
+    MultipleHandleValueNotification {
+        values: HexSlice<&'a [u8]>,
+    },
 
     /// Attribute value change notification sent from server to client.
     ///
@@ -481,6 +497,15 @@ impl<'a> FromBytes<'a> for AttPdu<'a> {
             },
             Opcode::ExecuteWriteReq => AttPdu::ExecuteWriteReq {
                 flags: bytes.read_u8()?,
+            },
+            Opcode::ReadMultipleVarReq => AttPdu::ReadMultipleVarReq {
+                handles: HexSlice(bytes.read_slice(bytes.bytes_left())?),
+            },
+            Opcode::ReadMultipleVarRsp => AttPdu::ReadMultipleVarRsp {
+                values: HexSlice(bytes.read_slice(bytes.bytes_left())?),
+            },
+            Opcode::MultipleHandleValueNotification => AttPdu::MultipleHandleValueNotification {
+                values: HexSlice(bytes.read_slice(bytes.bytes_left())?),
             },
             Opcode::ExecuteWriteRsp => AttPdu::ExecuteWriteRsp {},
             Opcode::HandleValueNotification => AttPdu::HandleValueNotification {
@@ -622,6 +647,15 @@ impl<'a> ToBytes for AttPdu<'a> {
                 writer.write_u8(flags)?;
             }
             AttPdu::ExecuteWriteRsp => {}
+            AttPdu::ReadMultipleVarReq { handles } => {
+                writer.write_slice(handles.as_ref())?;
+            }
+            AttPdu::ReadMultipleVarRsp { values } => {
+                writer.write_slice(values.as_ref())?;
+            }
+            AttPdu::MultipleHandleValueNotification { values } => {
+                writer.write_slice(values.as_ref())?;
+            }
             AttPdu::HandleValueNotification { handle, value } => {
                 handle.to_bytes(writer)?;
                 writer.write_slice_truncate(value.as_ref());
@@ -668,6 +702,11 @@ impl AttPdu<'_> {
             AttPdu::PrepareWriteRsp { .. } => Opcode::PrepareWriteRsp,
             AttPdu::ExecuteWriteReq { .. } => Opcode::ExecuteWriteReq,
             AttPdu::ExecuteWriteRsp { .. } => Opcode::ExecuteWriteRsp,
+            AttPdu::ReadMultipleVarReq { .. } => Opcode::ReadMultipleVarReq,
+            AttPdu::ReadMultipleVarRsp { .. } => Opcode::ReadMultipleVarRsp,
+            AttPdu::MultipleHandleValueNotification { .. } => {
+                Opcode::MultipleHandleValueNotification
+            }
             AttPdu::HandleValueNotification { .. } => Opcode::HandleValueNotification,
             AttPdu::HandleValueIndication { .. } => Opcode::HandleValueIndication,
             AttPdu::HandleValueConfirmation { .. } => Opcode::HandleValueConfirmation,
