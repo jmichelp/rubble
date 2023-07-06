@@ -34,7 +34,12 @@ mod app {
         where
             I: Iterator<Item = AdStructure<'a>>,
         {
-            rprint!("[{:?} ", metadata.timestamp.unwrap().ticks());
+            rprint!(
+                "[{:?}] CH:{:?} Type:{:?} ",
+                metadata.timestamp.unwrap().ticks(),
+                metadata.channel,
+                metadata.pdu_type.unwrap(),
+            );
             if let Some(rssi) = metadata.rssi {
                 rprint!("RSSI:{:?}dBm ", rssi);
             }
