@@ -19,7 +19,7 @@ fugit = "0.3.7"
 heapless = "0.7.16"
 rand_core = "0.6.4"
 sha2 = { version = "0.10.7", default-features = false }
-zerocopy = "0.6.1"
+zerocopy = "0.7.5"
 defmt = "0.3.5"
 p256 = { version="0.13.2", default-features = false, features = ["arithmetic"]}
 ring = { version = "0.16.20", default-features = false, optional = true }
